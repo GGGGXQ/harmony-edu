@@ -1,0 +1,52 @@
+{
+  "float": [
+    {
+      "name": "display_size",
+      "value": "24fp"
+    },
+    {
+      "name": "headline_size",
+      "value": "20fp"
+    },
+    {
+      "name": "title_size",
+      "value": "18fp"
+    },
+    {
+      "name": "body_size",
+      "value": "16fp"
+    },
+    {
+      "name": "label_size",
+      "value": "14fp"
+    },
+    {
+      "name": "caption_size",
+      "value": "12fp"
+    },
+    {
+      "name": "border_width",
+      "value": "2vp"
+    },
+    {
+      "name": "spacing_xs",
+      "value": "8vp"
+    },
+    {
+      "name": "spacing_sm",
+      "value": "12vp"
+    },
+    {
+      "name": "spacing_md",
+      "value": "16vp"
+    },
+    {
+      "name": "spacing_lg",
+      "value": "24vp"
+    },
+    {
+      "name": "spacing_xl",
+      "value": "32vp"
+    }
+  ]
+}

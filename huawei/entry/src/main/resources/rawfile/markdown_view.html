@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>md</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;background:transparent;font-family:HarmonyOS Sans,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.7;color:#2C2C2C;word-break:break-word;overflow-wrap:anywhere}
+h1{font-size:17px;font-weight:700;margin:14px 0 6px}
+h2{font-size:16px;font-weight:600;margin:12px 0 4px}
+h3{font-size:15px;font-weight:600;margin:10px 0 4px}
+p{margin:4px 0}
+ul,ol{margin:6px 0;padding-left:20px}
+li{margin:2px 0}
+pre{background:#F0EBE6;padding:10px;border-radius:4px;margin:8px 0;font-family:Courier New,monospace;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+code{background:#F0EBE6;padding:1px 5px;border-radius:3px;font-family:Courier New,monospace;font-size:14px}
+pre code{background:transparent;padding:0}
+strong{font-weight:600}
+em{font-style:italic}
+</style>
+</head>
+<body>
+<div id="root">加载中...</div>
+<script>
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function md(m){
+  m = esc(m);
+  m = m.replace(/```([\s\S]*?)```/g, function(_,c){return '<pre><code>'+c+'</code></pre>';});
+  m = m.replace(/`([^`]+)`/g, '<code>$1</code>');
+  m = m.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  m = m.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  m = m.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  m = m.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  m = m.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  m = m.replace(/(?:^|\n)((?:- .+(?:\n|$))+)/g, function(_,block){
+    return '\n<ul>'+block.trim().split(/\n/).map(function(l){return l.replace(/^- /,'<li>')+'</li>';}).join('')+'</ul>\n';
+  });
+  m = m.replace(/(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g, function(_,block){
+    return '\n<ol>'+block.trim().split(/\n/).map(function(l){return l.replace(/^\d+\. /,'<li>')+'</li>';}).join('')+'</ol>\n';
+  });
+  m = m.replace(/\n/g, '<br/>');
+  return m;
+}
+window.renderMarkdown = function(text){
+  try {
+    document.getElementById('root').innerHTML = md(text || '');
+    document.title = 'ready';
+  } catch(e) {
+    document.getElementById('root').innerHTML = 'err: ' + e.message;
+    document.title = 'err';
+  }
+};
+</script>
+</body>
+</html>

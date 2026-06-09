@@ -1,0 +1,69 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/edu_rag?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  mail:
+    host: ${SMTP_HOST:smtp.163.com}
+    port: ${SMTP_PORT:465}
+    username: ${SMTP_USERNAME:dummy@dev.com}
+    password: ${SMTP_PASSWORD:dummy-password}
+    from: ${SMTP_FROM:dummy@dev.com}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+  ai:
+    openai:
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+      api-key: ${EMBEDDING_API_KEY:dummy-key}
+      chat:
+        options:
+          model: ${CHAT_MODEL:deepseek-v4-flash}
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.course.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-key-min-256bits-long-abcdef1234567890}
+    expiration: ${JWT_EXPIRATION:86400000}
+  chroma:
+    url: ${CHROMA_URL:http://localhost:8001}
+  chat:
+    model: ${CHAT_MODEL:deepseek-v4-flash}
+  embedding:
+    base-url: ${EMBEDDING_NATIVE_URL:https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding}
+    compatible-base-url: ${EMBEDDING_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+    api-key: ${EMBEDDING_API_KEY:dummy-key}
+    model: ${EMBEDDING_MODEL:text-embedding-v3}
+  ingestion:
+    book-path: ${INGESTION_BOOK_PATH:data/books/book.md}
+    chunk-size: ${INGESTION_CHUNK_SIZE:1000}
+    chunk-overlap: ${INGESTION_CHUNK_OVERLAP:100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always

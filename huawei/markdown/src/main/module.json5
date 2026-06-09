@@ -1,0 +1,17 @@
+{
+  "module": {
+    "name": "markdown",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1"
+    ],
+    "metadata": [
+      {
+        "name": "metaInfo_module_markdown",
+        "value": "markdown"
+      }
+    ]
+  }
+}

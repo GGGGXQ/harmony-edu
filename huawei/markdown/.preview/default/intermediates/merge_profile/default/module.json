@@ -1,0 +1,35 @@
+{
+	"app": {
+		"bundleName": "com.test.edurag",
+		"debug": true,
+		"versionCode": 1000000,
+		"versionName": "1.0.0",
+		"minAPIVersion": 60100023,
+		"targetAPIVersion": 60100023,
+		"apiReleaseType": "Release",
+		"targetMinorAPIVersion": 0,
+		"targetPatchAPIVersion": 0,
+		"compileSdkVersion": "6.1.0.105",
+		"compileSdkType": "HarmonyOS",
+		"appEnvironments": [],
+		"bundleType": "app",
+		"buildMode": "debug"
+	},
+	"module": {
+		"name": "markdown",
+		"type": "har",
+		"deviceTypes": [
+			"default",
+			"tablet",
+			"2in1"
+		],
+		"metadata": [
+			{
+				"name": "metaInfo_module_markdown",
+				"value": "markdown"
+			}
+		],
+		"packageName": "fluid-markdown",
+		"installationFree": false
+	}
+}
