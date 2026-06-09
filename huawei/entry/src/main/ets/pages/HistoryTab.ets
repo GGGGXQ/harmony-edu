@@ -163,14 +163,6 @@ export struct HistoryTab {
                   }
                   .width('100%')
 
-                  Row({ space: 8 }) {
-                    Row().width(20).height(1).backgroundColor(PixelStyles.BORDER)
-                    Row().width(4).height(4).backgroundColor(PixelStyles.ACCENT).borderRadius(2)
-                    Row().layoutWeight(1).height(1).backgroundColor(PixelStyles.BORDER)
-                  }
-                  .width('100%')
-                  .margin({ top: 10 })
-                  .alignItems(VerticalAlign.Center)
                 }
                 .width('100%')
                 .padding({ left: 24, right: 24, top: 28, bottom: 8 })
@@ -220,12 +212,7 @@ export struct HistoryTab {
                 .borderRadius(PixelStyles.RADIUS_SM)
                 .shadow({ radius: 10, color: '#2C2C2C20', offsetX: 3, offsetY: 3 })
               }
-              .padding(3)
-              .borderWidth(PixelStyles.BORDER_WIDTH)
-              .borderColor(PixelStyles.BORDER_LIGHT)
-              .borderStyle(BorderStyle.Solid)
-              .borderRadius(PixelStyles.RADIUS_SM + 2)
-              .padding({ left: 17, right: 17, top: 1, bottom: 1 })
+              .padding({ left: 20, right: 20, top: 3, bottom: 3 })
               .onClick(() => {
                 let s: SessionItem = item.session;
                 router.pushUrl({

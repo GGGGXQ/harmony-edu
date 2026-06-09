@@ -22,6 +22,7 @@ public class AuthService {
     private final EmailService emailService;
 
     private static final String TOKEN_PREFIX = "token:";
+    private static final String USER_TOKEN_PREFIX = "user_token:";
     private static final String CODE_PREFIX = "verify_code:";
     private static final String RATE_PREFIX = "rate_limit:";
     private static final long CODE_TTL = 5;
@@ -119,9 +120,19 @@ public class AuthService {
     }
 
     private void cacheToken(String token, String userId) {
+        String oldToken = redisTemplate.opsForValue().get(USER_TOKEN_PREFIX + userId);
+        if (oldToken != null) {
+            redisTemplate.delete(TOKEN_PREFIX + oldToken);
+        }
         redisTemplate.opsForValue().set(
                 TOKEN_PREFIX + token,
                 userId,
+                jwtTokenProvider.getExpiration(),
+                TimeUnit.MILLISECONDS
+        );
+        redisTemplate.opsForValue().set(
+                USER_TOKEN_PREFIX + userId,
+                token,
                 jwtTokenProvider.getExpiration(),
                 TimeUnit.MILLISECONDS
         );

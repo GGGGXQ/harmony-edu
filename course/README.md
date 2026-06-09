@@ -10,11 +10,11 @@
 | ORM | MyBatis-Plus 3.5.9 |
 | 数据库 | MySQL 8.0 |
 | 缓存 | Redis (token 缓存、验证码) |
-| AI 聊天 | DashScope 通义千问 (`qwen-plus`), Spring AI 1.0.0-M6 |
-| Embedding | DashScope (`text-embedding-v3`) |
+| AI 聊天 | DashScope 通义千问 (`deepseek-v4-flash`), Spring AI 1.0.0-M6 |
+| Embedding | DashScope (`text-embedding-v3`)，双轨制：Ingestion 用 HTTP 直连，RAG Pipeline 用 Spring AI `EmbeddingModel` |
 | 向量库 | ChromaDB (port 8001, HTTP 客户端直连) |
-| 认证 | JWT (JJWT 0.12.6), BCrypt, Redis token 缓存 |
-| 流式推送 | WebSocket (JWT 握手鉴权) + SSE (备选) |
+| 认证 | JWT (JJWT 0.12.6), BCrypt, Redis token 缓存（单设备登录：新登录使旧 token 失效） |
+| 流式推送 | WebSocket (JWT 握手鉴权，`Authorization: Bearer` Header) + SSE (备选) |
 | 文档 | SpringDoc OpenAPI (Swagger UI) |
 
 ## 快速开始
@@ -62,6 +62,16 @@ mysql -u root -p edu_rag < src/main/resources/schema.sql
 ```bash
 mysql -u root -p edu_rag < src/main/resources/data.sql
 ```
+
+### 数据库迁移（v1 → v2）
+
+从旧版 schema（`qa_history`、`session_qa` 表）迁移到新版（`session`、`chat_message`、`qa_source` 表）：
+
+```bash
+mysql -u root -p edu_rag < migration_v2.sql
+```
+
+迁移内容：`qa_history` 数据按角色拆分为 user/assistant 消息写入 `chat_message`，更新 `qa_source` 关联到新消息 ID，清理旧表。
 
 ### 启动
 
@@ -121,6 +131,54 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 | GET | `/api/sessions/{id}/history` | 会话消息历史（flat 消息列表） |
 | DELETE | `/api/sessions/{id}` | 软删除会话 |
 
+### 请求/响应体格式
+
+#### 注册 `POST /api/auth/register`
+
+```json
+{"username":"string","password":"string","email":"string","code":"验证码"}
+```
+
+返回 `TokenVO`：
+```json
+{"token":"jwt","userId":"uuid","username":"string"}
+```
+
+#### 更新用户 `PUT /api/users/me`
+
+```json
+{"username":"string（可选）","email":"string（可选）"}
+```
+
+#### 修改密码 `PUT /api/users/me/password`
+
+```json
+{"oldPassword":"string","newPassword":"string"}
+```
+
+#### 签到 `POST /api/users/signin`
+
+返回 `SigninVO`：
+```json
+{"todaySigned":true,"signinDays":3}
+```
+
+#### 提问 `POST /api/qa/ask`
+
+```json
+{"courseId":"uuid","question":"string","sessionId":"uuid（可选，续传历史会话）"}
+```
+
+#### 提问（流式 SSE） `POST /api/qa/ask/stream`
+
+请求体同上，响应为 `text/event-stream`，事件格式同 WebSocket。
+
+#### 创建会话 `POST /api/sessions`
+
+```json
+{"courseId":"uuid"}
+```
+
 ### 健康检查
 
 | 方法 | 路径 | 说明 |
@@ -132,7 +190,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 
 **端点**: `ws://localhost:8080/ws/qa/ask`
 
-**握手**: 通过 URL Query 参数携带 JWT Token：`ws://localhost:8080/ws/qa/ask?token=<jwt>`
+**握手**: 通过 HTTP Header 携带 JWT Token：`Authorization: Bearer <token>`（在 WebSocket 升级请求中设置）
 
 **请求格式**（建立连接后发送）：
 
@@ -163,10 +221,10 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `page` | 0 | 页码（从 0 开始） |
-| `size` | 10 | 每页条数 |
+| `page` | 1 | 页码（从 1 开始） |
+| `size` | 20 | 每页条数 |
 
-返回 `ApiResponse<PageResult<SessionVO>>`。
+返回 `ApiResponse<PageVO<SessionVO>>`。
 
 ### 会话历史响应格式
 
@@ -206,33 +264,81 @@ mvn test
 
 ```
 src/main/java/com/example/course/
-├── config/          # 安全、MyBatis、Redis、CORS、Swagger、WebSocket、AI 配置
-├── controller/      # REST 控制器
-├── dto/             # 请求 DTO + 通用响应 ApiResponse
-├── entity/          # 数据库实体
-├── exception/       # 全局异常处理
-├── mapper/          # MyBatis-Plus Mapper
-├── rag/             # RAG 管线
-│   ├── chunk/       # 文档切分策略
-│   └── ingestion/   # 文档导入流水线
-├── security/        # JWT 认证 + WebSocket 拦截器
-├── service/         # 业务逻辑
-└── vo/              # 视图对象（响应体）
+├── config/            # 安全、MyBatis、Redis、CORS、Swagger、WebSocket、AI 配置
+│   ├── SecurityConfig.java       # 三链安全配置（ERROR/public/API）
+│   ├── EmbeddingConfig.java      # Spring AI EmbeddingModel Bean
+│   ├── WebSocketConfig.java      # WebSocket 端点注册
+│   ├── CorsConfig.java
+│   ├── SwaggerConfig.java
+│   └── RedisConfig.java / MyBatisPlusConfig.java
+├── controller/        # REST 控制器
+│   ├── AuthController.java       # 注册/登录/登出/验证码
+│   ├── UserController.java       # 用户信息/签到
+│   ├── CourseController.java     # 课程列表/详情
+│   ├── QaController.java         # 同步/流式提问
+│   └── SessionController.java    # 会话 CRUD
+├── dto/               # 请求 DTO + 通用响应
+│   ├── ApiResponse.java          # 统一响应包装
+│   ├── AuthRequest.java          # 登录/注册请求
+│   ├── UpdateUserDTO.java        # 更新用户信息
+│   ├── ChangePasswordDTO.java    # 修改密码
+│   ├── QaRequest.java            # 提问请求
+│   └── SessionDTO.java           # 创建会话请求
+├── entity/            # 数据库实体（User / Course / Session / ChatMessage / QaSource）
+├── exception/         # 全局异常处理
+├── mapper/            # MyBatis-Plus Mapper 接口
+├── rag/               # RAG 管线
+│   ├── RagPipeline.java          # 检索→组装→调用 LLM 主流程
+│   ├── EmbeddingService.java     # HTTP 直连 DashScope Embedding API
+│   ├── ChromaService.java        # ChromaDB 相似度检索（top-k=5）
+│   ├── chunk/                    # 文档切分策略
+│   │   ├── CompositeChunker.java # 组合切分器（Markdown + 句子）
+│   │   └── TextChunker.java      # 保留备选
+│   └── ingestion/                # 文档导入流水线
+│       ├── IngestionRunner.java  # 导入入口
+│       └── MarkdownDocumentReader.java
+├── security/          # JWT 认证
+│   ├── JwtTokenProvider.java     # JWT 生成/验证
+│   ├── JwtAuthenticationFilter.java # 请求拦截过滤器（Redis 缓存回退）
+│   ├── JwtHandshakeInterceptor.java # WebSocket 握手鉴权
+│   └── UserDetailsServiceImpl.java
+├── service/           # 业务逻辑接口 + 实现
+│   ├── AuthService / AuthServiceImpl
+│   ├── UserService / UserServiceImpl
+│   ├── CourseService / CourseServiceImpl
+│   ├── SessionService / SessionServiceImpl
+│   ├── QaService / QaServiceImpl
+│   ├── ChatMessageService / ChatMessageServiceImpl
+│   └── QaSourceService / QaSourceServiceImpl
+└── vo/                # 视图对象（响应体）
+    ├── TokenVO.java              # 登录/注册返回
+    ├── SigninVO.java             # 签到信息
+    ├── UserVO.java               # 用户信息
+    ├── SessionVO.java            # 会话视图
+    ├── ChatMessageVO.java        # 消息 + 来源
+    ├── QaSourceVO.java           # 来源引用
+    └── PageVO.java               # 分页包装
 ```
 
 ## RAG 管线架构
+
+> **注意**：项目存在两套 Embedding 机制：
+> - **RAG Pipeline**（问答时检索）：使用 Spring AI 的 `EmbeddingModel` 接口（通过 `EmbeddingConfig` 配置的 `OpenAiEmbeddingModel` Bean，兼容 DashScope）
+> - **Ingestion**（文档导入时）：使用自定义 `EmbeddingService`（HTTP 直连 DashScope 原生 API）
+>
+> 两套均使用 DashScope `text-embedding-v3` 模型，响应兼容。
 
 ```
 用户提问
     │
     ▼
-EmbeddingService (DashScope text-embedding-v3)
+EmbeddingModel / EmbeddingService (DashScope text-embedding-v3)
     │
     ▼
 ChromaService (相似度检索，top-k=5)
     │
     ▼
-RagPipeline (组装 Prompt → 调用通义千问 qwen-plus)
+RagPipeline (组装 Prompt → 调用通义千问 deepseek-v4-flash)
     │
     ▼
 返回回答 + 来源引用 → 存入 chat_message + qa_source
@@ -271,9 +377,11 @@ ChromaDB (集合名: course_{courseId}_docs)
 | SMTP_USERNAME | dummy@dev.com | 邮箱账号 |
 | SMTP_PASSWORD | dummy-password | 邮箱密码/授权码 |
 | SMTP_FROM | dummy@dev.com | 发件地址 |
-| EMBEDDING_API_KEY | dummy-key | DashScope API Key |
-| DASHSCOPE_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode | DashScope 兼容 API 地址 |
-| CHAT_MODEL | qwen-plus | 聊天模型 |
+| EMBEDDING_API_KEY | dummy-key | DashScope API Key（聊天 + Embedding 共用） |
+| DASHSCOPE_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode | DashScope 兼容 API 地址（聊天用） |
+| EMBEDDING_NATIVE_URL | https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding | DashScope 原生 Embedding API 地址（Ingestion 用） |
+| EMBEDDING_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode | DashScope 兼容模式 Embedding API 地址（RAG Pipeline 用） |
+| CHAT_MODEL | deepseek-v4-flash | 聊天模型 |
 | EMBEDDING_MODEL | text-embedding-v3 | Embedding 模型 |
 | CHROMA_URL | http://localhost:8001 | ChromaDB 地址 |
 | JWT_SECRET | dev-secret-... | JWT 签名密钥 |

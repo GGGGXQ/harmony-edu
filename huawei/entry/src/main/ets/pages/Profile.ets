@@ -78,8 +78,7 @@ export struct ProfilePage {
               .margin({ top: 6 })
           }
           .width('100%')
-          .padding({ top: 40, bottom: 36 })
-          .justifyContent(FlexAlign.Center)
+          .padding({ top: 64, bottom: 48 })
           .alignItems(HorizontalAlign.Center)
 
           // ---- 菜单 ----
@@ -99,6 +98,7 @@ export struct ProfilePage {
         }
         .width('100%')
       }
+      .align(Alignment.Top)
       .layoutWeight(1)
     }
     .width('100%').height('100%').backgroundColor(PixelStyles.SCREEN_BG)

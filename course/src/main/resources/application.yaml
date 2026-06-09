@@ -32,7 +32,7 @@ spring:
       api-key: ${EMBEDDING_API_KEY:dummy-key}
       chat:
         options:
-          model: ${CHAT_MODEL:qwen-plus}
+          model: ${CHAT_MODEL:deepseek-v4-flash}
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -48,7 +48,7 @@ app:
   chroma:
     url: ${CHROMA_URL:http://localhost:8001}
   chat:
-    model: ${CHAT_MODEL:qwen-plus}
+    model: ${CHAT_MODEL:deepseek-v4-flash}
   embedding:
     base-url: ${EMBEDDING_NATIVE_URL:https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding}
     compatible-base-url: ${EMBEDDING_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
