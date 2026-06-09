@@ -1,21 +1,21 @@
 # RAG 教育助手 — 后端
 
-基于 Spring Boot 3 + MyBatis-Plus + DashScope（通义千问）的 RAG 问答系统后端，为 HarmonyOS App 提供 API 服务。
+基于 Spring Boot 3 + MyBatis-Plus + DashScope（阿里百炼大模型平台）的 RAG 问答系统后端，为 HarmonyOS App 提供 API 服务。
 
 ## 技术栈
 
-| 组件 | 选型 |
-|------|------|
-| 框架 | Spring Boot 3.2.12, Java 17 |
-| ORM | MyBatis-Plus 3.5.9 |
-| 数据库 | MySQL 8.0 |
-| 缓存 | Redis (token 缓存、验证码) |
-| AI 聊天 | DashScope 通义千问 (`deepseek-v4-flash`), Spring AI 1.0.0-M6 |
+| 组件 | 选型                                                                                                |
+|------|---------------------------------------------------------------------------------------------------|
+| 框架 | Spring Boot 3.2.12, Java 17                                                                       |
+| ORM | MyBatis-Plus 3.5.9                                                                                |
+| 数据库 | MySQL 8.0                                                                                         |
+| 缓存 | Redis (token 缓存、验证码)                                                                              |
+| AI 聊天 | DashScope 阿里百炼 (`deepseek-v4-flash`), Spring AI 1.0.0-M6                                          |
 | Embedding | DashScope (`text-embedding-v3`)，双轨制：Ingestion 用 HTTP 直连，RAG Pipeline 用 Spring AI `EmbeddingModel` |
-| 向量库 | ChromaDB (port 8001, HTTP 客户端直连) |
-| 认证 | JWT (JJWT 0.12.6), BCrypt, Redis token 缓存（单设备登录：新登录使旧 token 失效） |
-| 流式推送 | WebSocket (JWT 握手鉴权，`Authorization: Bearer` Header) + SSE (备选) |
-| 文档 | SpringDoc OpenAPI (Swagger UI) |
+| 向量库 | ChromaDB (port 8001, HTTP 客户端直连)                                                                  |
+| 认证 | JWT (JJWT 0.12.6), BCrypt, Redis token 缓存（单设备登录：新登录使旧 token 失效）                                   |
+| 流式推送 | WebSocket (JWT 握手鉴权，`Authorization: Bearer` Header) + SSE (备选)                                    |
+| 文档 | SpringDoc OpenAPI (Swagger UI)                                                                    |
 
 ## 快速开始
 
@@ -25,7 +25,7 @@
 - MySQL 8.0+
 - Redis
 - ChromaDB (port 8001)
-- DashScope API Key (阿里云通义千问)
+- DashScope API Key (阿里百炼)
 
 ### 配置
 
@@ -33,7 +33,7 @@
 
 ```env
 DB_USERNAME=root
-DB_PASSWORD=123456
+DB_PASSWORD=password
 SMTP_USERNAME=your-email@163.com
 SMTP_PASSWORD=your-auth-code
 EMBEDDING_API_KEY=your-dashscope-api-key
@@ -338,7 +338,7 @@ EmbeddingModel / EmbeddingService (DashScope text-embedding-v3)
 ChromaService (相似度检索，top-k=5)
     │
     ▼
-RagPipeline (组装 Prompt → 调用通义千问 deepseek-v4-flash)
+RagPipeline (组装 Prompt → 调用阿里百炼 deepseek-v4-flash)
     │
     ▼
 返回回答 + 来源引用 → 存入 chat_message + qa_source
