@@ -14,7 +14,7 @@
 | Embedding | DashScope (`text-embedding-v3`)，双轨制：Ingestion 用 HTTP 直连，RAG Pipeline 用 Spring AI `EmbeddingModel` |
 | 向量库 | ChromaDB (port 8001, HTTP 客户端直连)                                                                  |
 | 认证 | JWT (JJWT 0.12.6), BCrypt, Redis token 缓存（单设备登录：新登录使旧 token 失效）                                   |
-| 流式推送 | WebSocket (JWT 握手鉴权，`Authorization: Bearer` Header) + SSE (备选)                                    |
+| 流式推送 | WebSocket (JWT 握手鉴权，`Authorization: Bearer` Header) |
 | 文档 | SpringDoc OpenAPI (Swagger UI)                                                                    |
 
 ## 快速开始
@@ -62,10 +62,6 @@ mysql -u root -p edu_rag < src/main/resources/schema.sql
 ```bash
 mysql -u root -p edu_rag < src/main/resources/data.sql
 ```
-
-### 数据库迁移（v1 → v2）
-
-从旧版 schema（`qa_history`、`session_qa` 表）迁移到新版（`session`、`chat_message`、`qa_source` 表）：
 
 ```bash
 mysql -u root -p edu_rag < migration_v2.sql
@@ -125,7 +121,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 | GET | `/api/courses` | 课程列表 |
 | GET | `/api/courses/{id}` | 课程详情 |
 | POST | `/api/qa/ask` | 提问（同步，返回完整回答） |
-| POST | `/api/qa/ask/stream` | 提问（流式 SSE） |
+| WebSocket | `ws://.../ws/qa/ask` | **提问（流式，主要接口）**，前端通过此端点实现逐字输出 |
+| POST | `/api/qa/ask/stream` | 提问（已弃用，保留兼容） |
 | GET | `/api/sessions` | 已登录用户的所有会话（分页，按更新时间倒序） |
 | GET | `/api/sessions/{courseId}` | 按课程过滤会话列表（分页） |
 | GET | `/api/sessions/{id}/history` | 会话消息历史（flat 消息列表） |
@@ -169,9 +166,11 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 {"courseId":"uuid","question":"string","sessionId":"uuid（可选，续传历史会话）"}
 ```
 
-#### 提问（流式 SSE） `POST /api/qa/ask/stream`
+#### 提问（SSE，已弃用） `POST /api/qa/ask/stream`
 
-请求体同上，响应为 `text/event-stream`，事件格式同 WebSocket。
+同 `/api/qa/ask` 请求体，响应为 `text/event-stream`，事件格式同 WebSocket。
+
+> 该端点已弃用，前端已切换为 WebSocket 流式问答。当前保留仅为向后兼容，后续版本将移除。
 
 #### 创建会话 `POST /api/sessions`
 
@@ -212,10 +211,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=ingest
 ...
 {"type":"done","data":{"role":"assistant","content":"完整回答","sources":[...],"createdAt":"..."}}
 ```
-
-### 流式 SSE 事件格式
-
-`POST /api/qa/ask/stream` 同样按上述事件格式推送（`text/event-stream`），与 WebSocket 结构一致。
 
 ### 会话列表分页
 
@@ -366,26 +361,26 @@ ChromaDB (集合名: course_{courseId}_docs)
 
 ## 环境变量
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| DB_USERNAME | root | MySQL 用户名 |
-| DB_PASSWORD | 123456 | MySQL 密码 |
-| REDIS_HOST | localhost | Redis 主机 |
-| REDIS_PORT | 6379 | Redis 端口 |
-| SMTP_HOST | smtp.163.com | SMTP 服务器 |
-| SMTP_PORT | 465 | SMTP 端口 |
-| SMTP_USERNAME | dummy@dev.com | 邮箱账号 |
-| SMTP_PASSWORD | dummy-password | 邮箱密码/授权码 |
-| SMTP_FROM | dummy@dev.com | 发件地址 |
-| EMBEDDING_API_KEY | dummy-key | DashScope API Key（聊天 + Embedding 共用） |
-| DASHSCOPE_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode | DashScope 兼容 API 地址（聊天用） |
+| 变量 | 默认值                                                                      | 说明 |
+|------|--------------------------------------------------------------------------|------|
+| DB_USERNAME | root                                                                     | MySQL 用户名 |
+| DB_PASSWORD | password                                                                 | MySQL 密码 |
+| REDIS_HOST | localhost                                                                | Redis 主机 |
+| REDIS_PORT | 6379                                                                     | Redis 端口 |
+| SMTP_HOST | smtp.163.com                                                             | SMTP 服务器 |
+| SMTP_PORT | 465                                                                      | SMTP 端口 |
+| SMTP_USERNAME | dummy@dev.com                                                            | 邮箱账号 |
+| SMTP_PASSWORD | dummy-password                                                           | 邮箱密码/授权码 |
+| SMTP_FROM | dummy@dev.com                                                            | 发件地址 |
+| EMBEDDING_API_KEY | dummy-key                                                                | DashScope API Key（聊天 + Embedding 共用） |
+| DASHSCOPE_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode                           | DashScope 兼容 API 地址（聊天用） |
 | EMBEDDING_NATIVE_URL | https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding | DashScope 原生 Embedding API 地址（Ingestion 用） |
-| EMBEDDING_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode | DashScope 兼容模式 Embedding API 地址（RAG Pipeline 用） |
-| CHAT_MODEL | deepseek-v4-flash | 聊天模型 |
-| EMBEDDING_MODEL | text-embedding-v3 | Embedding 模型 |
-| CHROMA_URL | http://localhost:8001 | ChromaDB 地址 |
-| JWT_SECRET | dev-secret-... | JWT 签名密钥 |
-| JWT_EXPIRATION | 86400000 | JWT 过期时间 (ms) |
-| INGESTION_BOOK_PATH | data/books/book.md | 导入的 MD 文件路径 |
-| INGESTION_CHUNK_SIZE | 1000 | 切分块大小（字符） |
-| INGESTION_CHUNK_OVERLAP | 100 | 切分重叠大小（字符） |
+| EMBEDDING_BASE_URL | https://dashscope.aliyuncs.com/compatible-mode                           | DashScope 兼容模式 Embedding API 地址（RAG Pipeline 用） |
+| CHAT_MODEL | deepseek-v4-flash                                                        | 聊天模型 |
+| EMBEDDING_MODEL | text-embedding-v3                                                        | Embedding 模型 |
+| CHROMA_URL | http://localhost:8001                                                    | ChromaDB 地址 |
+| JWT_SECRET | dev-secret-...                                                           | JWT 签名密钥 |
+| JWT_EXPIRATION | 86400000                                                                 | JWT 过期时间 (ms) |
+| INGESTION_BOOK_PATH | data/books/book.md                                                       | 导入的 MD 文件路径 |
+| INGESTION_CHUNK_SIZE | 1000                                                                     | 切分块大小（字符） |
+| INGESTION_CHUNK_OVERLAP | 100                                                                      | 切分重叠大小（字符） |
