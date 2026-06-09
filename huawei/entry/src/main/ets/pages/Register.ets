@@ -14,6 +14,8 @@ struct RegisterPage {
   @State code: string = '';
   @State loading: boolean = false;
   @State errorMsg: string = '';
+  @State countdown: number = 0;
+  private timerId: number = -1;
 
   build() {
     Column() {
@@ -59,7 +61,7 @@ struct RegisterPage {
             this.inputField('验证码', this.code, (v: string) => { this.code = v }, false, false, true)
 
             Column() {
-              Text('获取验证码')
+              Text(this.countdown > 0 ? `${this.countdown}s` : '获取验证码')
                 .fontSize(13)
                 .fontColor(PixelStyles.ACCENT)
                 .fontFamily(PixelStyles.FONT_LABEL)
@@ -74,7 +76,7 @@ struct RegisterPage {
             .borderRadius(PixelStyles.RADIUS_SM)
             .justifyContent(FlexAlign.Center)
             .margin({ left: 10 })
-            .onClick(() => this.sendCode())
+            .onClick(() => { if (this.countdown <= 0) this.sendCode(); })
           }
           .margin({ bottom: 24 })
 
@@ -129,13 +131,27 @@ struct RegisterPage {
       .borderWidth(PixelStyles.BORDER_WIDTH).borderColor(PixelStyles.BORDER)
       .borderStyle(BorderStyle.Solid).borderRadius(PixelStyles.RADIUS_SM)
       .placeholderColor(PixelStyles.INK_MUTED).padding({ left: 16, right: 16 })
-      .margin({ bottom: isLast ? 24 : 12 })
+      .margin({ bottom: isInline ? 0 : (isLast ? 24 : 12) })
       .layoutWeight(isInline ? 1 : undefined)
   }
 
   async sendCode() {
+    if (this.countdown > 0) return;
+    this.errorMsg = '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+      this.errorMsg = '请输入有效的邮箱地址';
+      return;
+    }
     let body: string = JSON.stringify({ email: this.email });
     await ApiClient.request(http.RequestMethod.POST, '/auth/code/send', body);
+    this.countdown = 60;
+    this.timerId = setInterval(() => {
+      this.countdown--;
+      if (this.countdown <= 0) {
+        clearInterval(this.timerId);
+        this.timerId = -1;
+      }
+    }, 1000);
   }
 
   async register() {

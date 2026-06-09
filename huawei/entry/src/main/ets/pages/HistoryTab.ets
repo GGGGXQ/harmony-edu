@@ -21,6 +21,7 @@ const REFRESH_DEBOUNCE_MS: number = 800;
 
 @Component
 export struct HistoryTab {
+  @Prop @Watch('onRefreshKeyChange') refreshKey: number = 0;
   @State sessions: SessionItem[] = []
   @State loading: boolean = true
   @State loadingMore: boolean = false
@@ -31,6 +32,10 @@ export struct HistoryTab {
   private lastRefreshAt: number = 0;
 
   aboutToAppear() { this.loadSessions(1); }
+
+  onRefreshKeyChange() {
+    if (this.refreshKey > 0) { this.loadSessions(1); }
+  }
 
   async loadSessions(page: number) {
     if (page === 1) { this.loading = true; } else { this.loadingMore = true; }

@@ -9,6 +9,7 @@ import { HistoryTab } from './HistoryTab';
 @Component
 struct MainPage {
   @State currentIndex: number = 0;
+  @State historyRefreshKey: number = 0;
 
   build() {
     Column() {
@@ -22,7 +23,7 @@ struct MainPage {
         .tabBar(this.tabBarItem(0))
 
         TabContent() {
-          HistoryTab()
+          HistoryTab({ refreshKey: this.historyRefreshKey })
         }
         .tabBar(this.tabBarItem(1))
 
@@ -37,6 +38,7 @@ struct MainPage {
       .barHeight(PixelStyles.TAB_BAR_HEIGHT)
       .onChange((index: number) => {
         this.currentIndex = index;
+        if (index === 1) { this.historyRefreshKey++; }
       })
     }
     .width('100%')

@@ -15,6 +15,8 @@ struct LoginPage {
   @State isCodeMode: boolean = false;
   @State loading: boolean = false;
   @State errorMsg: string = '';
+  @State countdown: number = 0;
+  private timerId: number = -1;
 
   build() {
     Column() {
@@ -61,23 +63,23 @@ struct LoginPage {
             Row() {
               this.inputField('验证码', this.code, (v: string) => { this.code = v }, false, false, true)
 
-              Column() {
-                Text('获取验证码')
-                  .fontSize(13)
-                  .fontColor(PixelStyles.ACCENT)
-                  .fontFamily(PixelStyles.FONT_LABEL)
-                  .fontWeight(600)
-              }
-              .height(PixelStyles.INPUT_HEIGHT)
-              .padding({ left: 14, right: 14 })
-              .backgroundColor(PixelStyles.SURFACE)
-              .borderWidth(PixelStyles.BORDER_WIDTH)
-              .borderColor(PixelStyles.ACCENT)
-              .borderStyle(BorderStyle.Solid)
-              .borderRadius(PixelStyles.RADIUS_SM)
-              .justifyContent(FlexAlign.Center)
-              .margin({ left: 10 })
-              .onClick(() => this.sendCode())
+            Column() {
+              Text(this.countdown > 0 ? `${this.countdown}s` : '获取验证码')
+                .fontSize(13)
+                .fontColor(PixelStyles.ACCENT)
+                .fontFamily(PixelStyles.FONT_LABEL)
+                .fontWeight(600)
+            }
+            .height(PixelStyles.INPUT_HEIGHT)
+            .padding({ left: 14, right: 14 })
+            .backgroundColor(PixelStyles.SURFACE)
+            .borderWidth(PixelStyles.BORDER_WIDTH)
+            .borderColor(PixelStyles.ACCENT)
+            .borderStyle(BorderStyle.Solid)
+            .borderRadius(PixelStyles.RADIUS_SM)
+            .justifyContent(FlexAlign.Center)
+            .margin({ left: 10 })
+            .onClick(() => { if (this.countdown <= 0) this.sendCode(); })
             }
             .margin({ bottom: 24 })
           }
@@ -149,7 +151,7 @@ struct LoginPage {
       .borderRadius(PixelStyles.RADIUS_SM)
       .placeholderColor(PixelStyles.INK_MUTED)
       .padding({ left: 16, right: 16 })
-      .margin({ bottom: isLast ? 24 : 12 })
+      .margin({ bottom: isInline ? 0 : (isLast ? 24 : 12) })
       .layoutWeight(isInline ? 1 : undefined)
   }
 
@@ -167,8 +169,22 @@ struct LoginPage {
   }
 
   async sendCode() {
+    if (this.countdown > 0) return;
+    this.errorMsg = '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+      this.errorMsg = '请输入有效的邮箱地址';
+      return;
+    }
     let body: string = JSON.stringify({ email: this.email });
     await ApiClient.request(http.RequestMethod.POST, '/auth/code/send', body);
+    this.countdown = 60;
+    this.timerId = setInterval(() => {
+      this.countdown--;
+      if (this.countdown <= 0) {
+        clearInterval(this.timerId);
+        this.timerId = -1;
+      }
+    }, 1000);
   }
 
   async codeLogin() {
