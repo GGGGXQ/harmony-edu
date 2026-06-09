@@ -11,7 +11,7 @@
 | 网络 | `@ohos.net.http` + `@ohos.net.webSocket` |
 | 状态管理 | `@State` / `@Link` / emitter 事件分发 |
 | 持久化 | `@ohos.data.preferences` |
-| Markdown | 自定义解析器 + `fluid-markdown` |
+| Markdown | `fluid-markdown` (流式渲染) |
 | 构建 | Hvigor |
 
 ## 页面路由
@@ -49,11 +49,21 @@ Index → 已登录 → MainPage
 
 HTTP + WebSocket 通信层：
 - HTTP 请求自动附带 `Authorization: Bearer <token>` Header
-- WebSocket 流式问答（`ws://10.0.2.2:8080/ws/qa/ask`），握手通过 HTTP Header 鉴权
-- 通过 `@ohos.events.emitter` 将 SSE 事件分发到 UI 层
 - 支持 Mock 模式切换（`useMock` 标志），离线开发时使用 `MockData`
 
-**SSE 事件类型：**
+**WebSocket 流式问答流程：**
+
+```
+QaChat.sendMessage()
+  → requestStream('POST', '/qa/ask/stream', body)  // 传入 HTTP 风格的路径
+  → ApiClient 内部将路径 /qa/ask/stream 转为 ws://10.0.2.2:8080/ws/qa/ask
+  → 建立 WebSocket 连接（握手携带 Authorization: Bearer <token>）
+  → 发送 JSON 请求体
+  → 收到 WebSocket 消息，通过 @ohos.events.emitter 分发到 UI 层
+  → QaChat 在 emitter.on() 回调中处理事件
+```
+
+**`emitter` 事件类型（由 WebSocket 消息解析后分发）：**
 
 | 事件 | 说明 |
 |------|------|
@@ -92,17 +102,15 @@ HTTP + WebSocket 通信层：
 
 17 个内联 SVG 图标组件（`IconHome`、`IconClock`、`IconUser`、`IconSettings`、`IconLogOut` 等），支持动态颜色和尺寸。
 
-### Markdown 解析 (`common/MarkdownParser.ets`)
+### Markdown 渲染
 
-自定义 Markdown 解析器（842 行），支持：
-- 标题（`#` ~ `######`）
-- 有序/无序列表
+AI 回答通过 `fluid-markdown` 库进行流式渲染（在 `QaChat.ets` 中使用），支持：
+- 标题、段落、有序/无序列表
 - 代码块（行内 + 围栏）
-- 表格
-- 引用块
+- 表格、引用块
 - 加粗/斜体/行内代码
-
-AI 回答还通过 `fluid-markdown` 库渲染（在 `QaChat.ets` 中使用）。
+- 流式打字输出（`EMarkdownMode.Typing`）
+- 主题定制（`ITheme`）
 
 ## 数据模型
 
