@@ -1,0 +1,12 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/Login",
+    "pages/Register",
+    "pages/MainPage",
+    "pages/QaChat",
+    "pages/History",
+    "pages/Settings",
+    "pages/SourceDetail"
+  ]
+}

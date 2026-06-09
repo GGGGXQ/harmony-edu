@@ -1,0 +1,4 @@
+[submodule "ffi/latex"]
+	path = ffi/latex
+	url = https://gitcode.com/Cangjie-TPC/formula-ffi.git
+	branch = microtex-v0.0.1-fix

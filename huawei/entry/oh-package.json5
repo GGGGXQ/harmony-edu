@@ -1,0 +1,9 @@
+{
+  name: "entry",
+  version: "1.0.0",
+  apiType: "stageMode",
+  description: "$string:app_name",
+  dependencies: {
+    "fluid-markdown": "file:../markdown"
+  }
+}

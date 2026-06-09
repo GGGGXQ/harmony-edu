@@ -1,0 +1,65 @@
+{
+  "apiType": "stageMode",
+  "buildOption": {
+    "externalNativeOptions": {
+      "path": "./src/main/cpp/CMakeLists.txt",
+      "arguments": "",
+      "cppFlags": "",
+      "abiFilters": [ "arm64-v8a", "x86_64" ]
+    },
+    "resOptions": {
+      "copyCodeResource": {
+        "enable": false
+      }
+    }
+  },
+  "buildOptionSet": [
+    {
+      "name": "release",
+      //配置筛选har依赖.so资源文件的过滤规则
+      "napiLibFilterOption": {
+        //允许当.so重名冲突时，使用高优先级的.so文件覆盖低优先级的.so文件
+        "enableOverride": true
+      },
+      "arkOptions": {
+        "obfuscation": {
+          "ruleOptions": {
+            "enable": true,
+            "files": [
+              "./obfuscation-rules.txt"
+            ]
+          },
+          "consumerFiles": [
+            "./consumer-rules.txt"
+          ]
+        }
+      }
+    },
+    {
+      "name": "debug",
+      //配置筛选har依赖.so资源文件的过滤规则
+      "napiLibFilterOption": {
+        //允许当.so重名冲突时，使用高优先级的.so文件覆盖低优先级的.so文件
+        "enableOverride": true
+      },
+      "arkOptions": {
+        "obfuscation": {
+          "ruleOptions": {
+            "enable": true,
+            "files": [
+              "./obfuscation-rules.txt"
+            ]
+          },
+          "consumerFiles": [
+            "./consumer-rules.txt"
+          ]
+        }
+      }
+    }
+  ],
+  "targets": [
+    {
+      "name": "default"
+    }
+  ]
+}
