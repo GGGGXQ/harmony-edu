@@ -138,7 +138,7 @@ export struct CourseListPage {
             .onClick(() => this.handleSignin())
 
             Text(this.todaySigned && this.consecutiveDays > 0
-              ? '已坚持 ' + String(this.consecutiveDays) + ' 天连续学习'
+              ? '累计 ' + String(this.consecutiveDays) + ' 天学习打卡'
               : '每日签到，记录学习轨迹')
               .fontSize(14)
               .fontColor(PixelStyles.INK_MUTED)
